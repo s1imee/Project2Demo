@@ -91,6 +91,8 @@ if __name__ == '__main__':
                 running = False
             if event.type == pygame.KEYUP:
                 player.key_is_up = True
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                Bullet(*event.pos)
 
         screen.fill(pygame.Color('white'))
         for sprite in all_sprites:
