@@ -97,10 +97,18 @@ class Hero(pygame.sprite.Sprite):
     def collide(self, collidable_object):
         hits = pygame.sprite.spritecollide(self, collidable_object, False)
         if len(hits) != 0:
-            if self.last_move_x != 0:
-                self.rect.x = self.rect.x - self.last_move_x
-            if self.last_move_y != 0:
-                self.rect.y = self.rect.y - self.last_move_y
+            for block in hits:
+                if block.rect.x + (block.rect.width - 10) < self.rect.x:  # left
+                    self.rect.x += 5
+                    # self.rect.x = self.rect.x - self.last_move_x
+                if block.rect.x > self.rect.x + (self.rect.width - 18):  # right
+                    self.rect.x -= 5
+                    # self.rect.y = self.rect.y - self.last_move_y
+                if block.rect.y > self.rect.y + (self.rect.height - 32):  # up
+                    self.rect.y -= 5
+                if block.rect.y + (block.rect.height - 40) < self.rect.y:  # down
+                    self.rect.y += 5
+
         self.last_move_x = self.last_move_y = 0
 
 
@@ -124,11 +132,9 @@ class Bullet(pygame.sprite.Sprite):
         angle = math.degrees(math.atan2(-dy, dx)) - 90
         self.image = pygame.transform.rotate(self.image, angle)
 
-
     def update(self):
         self.rect.x += self.dx * self.speed
         self.rect.y += self.dy * self.speed
-
 
 
 class Camera:
