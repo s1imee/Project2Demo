@@ -53,6 +53,8 @@ def generate_level(level):
                 new_player = Hero(x, y, player_group, all_sprites)
             elif level[y][x] == 'b':
                 collidable_object.append(Bunker(x, y, all_sprites))
+            elif level[y][x] == 's':
+                collidable_object.append(Tile('sand', x, y))
     # вернем игрока, а также размер поля в клетках
     return new_player, x, y
 
@@ -75,12 +77,13 @@ if __name__ == '__main__':
 
     tile_images = {
         'wall': load_image('crateWood.png'),
-        'empty': load_image('tileGrass1.png')
+        'empty': load_image('tileGrass1.png'),
+        'sand': load_image('tileSand1.png')
     }
     screen.fill(pygame.Color('white'))
     FPS = 60
     clock = pygame.time.Clock()
-    player, level_x, level_y = generate_level(load_level('level1.txt'))
+    player, level_x, level_y = generate_level(load_level('lvl1.txt'))
     camera = Camera()
     if scene:  # проверка начата ли сцена с босом
         Boss(all_sprites)

@@ -91,21 +91,43 @@ class Hero(pygame.sprite.Sprite):
         mouse_x, mouse_y = pygame.mouse.get_pos()
         rel_x, rel_y = mouse_x - self.rect.x, mouse_y - self.rect.y
         angle = (180 / math.pi) * -math.atan2(rel_y, rel_x)
-        self.image = pygame.transform.rotate(self.original_image, int(angle))
+        self.image = pygame.transform.rotate(self.original_image, int(angle + 4))
         # self.rect = self.image.get_rect(center=self.position)
 
     def collide(self, collidable_object):
         hits = pygame.sprite.spritecollide(self, collidable_object, False)
-        print(hits)
         if len(hits) != 0:
             if self.last_move_x != 0:
                 self.rect.x = self.rect.x - self.last_move_x
-                self.last_move_x = 0
             if self.last_move_y != 0:
                 self.rect.y = self.rect.y - self.last_move_y
-                self.last_move_y = 0
-        else:
-            self.last_move_x = self.last_move_y = 0
+        self.last_move_x = self.last_move_y = 0
+
+
+class Bullet(pygame.sprite.Sprite):
+    image1 = pygame.image.load("data/bulletRed2.png")
+    image = pygame.transform.scale(image1, (16, 24))
+
+    def __init__(self, pos_x, pos_y, player, *group):
+        super().__init__(*group)
+        self.image = Bullet.image
+        self.rect = self.image.get_rect()
+        self.rect.x = player.rect.x + 15
+        self.rect.y = player.rect.y + 15
+
+        # x, y = pygame.mouse.get_pos()# нажатие мыши
+        dx, dy = pos_x - self.rect.x, pos_y - self.rect.y
+        len = math.hypot(dx, dy)
+        self.dx = dx / len
+        self.dy = dy / len
+        self.speed = 10
+        angle = math.degrees(math.atan2(-dy, dx)) - 90
+        self.image = pygame.transform.rotate(self.image, angle)
+
+
+    def update(self):
+        self.rect.x += self.dx * self.speed
+        self.rect.y += self.dy * self.speed
 
 
 
