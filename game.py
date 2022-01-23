@@ -48,6 +48,7 @@ def generate_level(level):
                 Tile('empty', x, y)
             elif level[y][x] == '#':
                 collidable_object.append(Tile('wall', x, y))
+                bunk.add(Tile('wall', x, y))
             elif level[y][x] == '@':
                 Tile('empty', x, y)
                 new_player = Hero(x, y, player_group, all_sprites)
@@ -74,6 +75,8 @@ if __name__ == '__main__':
     all_sprites = pygame.sprite.Group()
     tiles_group = pygame.sprite.Group()
     player_group = pygame.sprite.Group()
+    bullets = pygame.sprite.Group()
+    bunk = pygame.sprite.Group()
 
     tile_images = {
         'wall': load_image('crateWood.png'),
@@ -93,9 +96,11 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                Bullet(*event.pos, player, all_sprites)
+                new = Bullet(*event.pos, player, all_sprites)
+                bullets.add(new)
 
         screen.fill(pygame.Color('white'))
+        hits = pygame.sprite.groupcollide(bunk, bullets, False, True)
         # for sprite in all_sprites:
         #     hasCollide = False
         #
