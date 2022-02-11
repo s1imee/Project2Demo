@@ -153,3 +153,46 @@ class Camera:
         x, y = target.rect.center
         self.dx = -(x + target.rect.w / 2 - width / 2)
         self.dy = -(y + target.rect.h / 2 - height / 2)
+
+
+class Enemy(pygame.sprite.Sprite):
+    image1 = pygame.image.load("data/creature.jpg")
+    image = pygame.transform.scale(image1, (56, 56))
+
+    def __init__(self, *group):
+        super().__init__(*group)
+        self.image = Enemy.image
+        self.rect = self.image.get_rect()
+        # self.rect.x = random.randint(0, 840)
+        # self.rect.y = random.randint(0, 840)
+        self.rect.x = 500
+        self.rect.y = 200
+        self.A = 448 - self.rect.x
+        self.B = 392 - self.rect.y
+        self.diag = (self.A ** 2 + self.B ** 2) ** (1 / 2)
+        self.dx = self.A / self.diag
+        self.dy = self.B / self.diag
+        print(self.dx)
+        print(self.dy)
+
+    def update(self):
+        if self.rect.x < 448 and self.rect.y < 392:
+            self.rect.x += self.dx
+            self.rect.y += self.dy
+        elif self.rect.x > 448 and self.rect.y < 392:
+            self.rect.x -= self.dx
+            self.rect.y += self.dy
+        elif self.rect.x < 448 and self.rect.y > 392:
+            self.rect.x += self.dx
+            self.rect.y -= self.dy
+        elif self.rect.x > 448 and self.rect.y > 392:
+            self.rect.x += self.dx
+            self.rect.y += self.dy
+        elif self.rect.x == 448 and self.rect.y < 392:
+            self.rect.y += self.B
+        elif self.rect.x == 448 and self.rect.y > 392:
+            self.rect.y -= self.B
+        elif self.rect.x < 448 and self.rect.y == 392:
+            self.rect.x += self.A
+        elif self.rect.x > 448 and self.rect.y == 392:
+            self.rect.x -= self.A

@@ -47,13 +47,16 @@ def generate_level(level):
             if level[y][x] == '.':
                 Tile('empty', x, y)
             elif level[y][x] == '#':
-                collidable_object.append(Tile('wall', x, y))
-                bunk.add(Tile('wall', x, y))
+                box = Tile('wall', x, y)
+                collidable_object.append(box)
+                bunk.add(box)
             elif level[y][x] == '@':
                 Tile('empty', x, y)
                 new_player = Hero(x, y, player_group, all_sprites)
             elif level[y][x] == 'b':
-                collidable_object.append(Bunker(x, y, all_sprites))
+                bunker = Bunker(x, y, all_sprites)
+                collidable_object.append(bunker)
+                bunk.add(bunker)
             elif level[y][x] == 's':
                 collidable_object.append(Tile('sand', x, y))
     # вернем игрока, а также размер поля в клетках
@@ -101,28 +104,10 @@ if __name__ == '__main__':
 
         screen.fill(pygame.Color('white'))
         hits = pygame.sprite.groupcollide(bunk, bullets, False, True)
-        # for sprite in all_sprites:
-        #     hasCollide = False
-        #
-        #     for collide in collidable_object:
-        #         hasCollide = collide.rect.colliderect(player)
-        #         pygame.sprite.spritecollide()
-        #         if hasCollide:
-        #             print(collide, hasCollide)
-        #             break
-        #
-        #     if hasCollide:
-        #
-        #         player.rect.x -= 5
-        #         break
-        #
-        #     camera.apply(sprite)
-        #     sprite.update()
 
         for sprite in all_sprites:
             camera.apply(sprite)
         camera.update(player)
-
         player.collide(collidable_object)
 
         all_sprites.update()
