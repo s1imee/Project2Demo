@@ -1,237 +1,285 @@
 import pygame
-import os
-import sys
+import math
 from random import choice
-from classes import Hero
-from classes import Boss
-from classes import BossBullet
-from classes import Camera
-from classes import Bullet
-from classes import Enemy
-from classes import Bunker
-from classes import Tile
 
-size = width, height = 896, 896
+pygame.init()
 tile_width = tile_height = 56
-screen = pygame.display.set_mode(size)
-scene = False  # для вызова боса назначить True
-lives = 25  # жизни базы
-collidable_object = []  # изменятся в generate_level и при создании врагов и пуль
-
-button_sound = pygame.mixer.Sound('button.wav')
-shot_sound = pygame.mixer.Sound('shot.wav')
-menu_sound = pygame.mixer.Sound('The Game is On.mp3')
-rule_sound = pygame.mixer.Sound('Work.mp3')
-game_sound = pygame.mixer.Sound('Who Can.mp3')
-damage_sound = pygame.mixer.Sound('dmg.mp3')
-all_sprites = pygame.sprite.Group()
-tiles_group = pygame.sprite.Group()
-player_group = pygame.sprite.Group()
-enemy_group = pygame.sprite.Group()
-point_gen_enemy = []
-
-bullets = pygame.sprite.Group()
-bunk = pygame.sprite.Group()
+width, height = 896, 896
 
 
-def menu():
-    background = pygame.image.load('FON.PNG')
-    ground = True
-    start = Button(200, 60)
-    rul = Button(200, 60)
-    pygame.mixer.Sound.stop(game_sound)
-    pygame.mixer.Sound.stop(rule_sound)
-    pygame.mixer.Sound.play(menu_sound)
-    while ground:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
-        screen.blit(background, (0, 0))
-        start.draw(300, 400, 'start game', start_game)
-        rul.draw(300, 500, 'rules of the game', rules_background)
-        pygame.display.update()
+class Boss(pygame.sprite.Sprite):
+    image1 = pygame.image.load("data/tank_huge.png")
+    image = pygame.transform.scale(image1, (62, 76))
+
+    def __init__(self, *group):
+        super().__init__(*group)
+        self.image = Boss.image
+        self.rect = self.image.get_rect()
+        self.rect.x = 800 + self.rect[2]
+        self.rect.y = 175
+
+    def update(self):
+        self.rect.x -= 0.5
 
 
-def start_game():
-    pygame.mixer.Sound.stop(menu_sound)
-    pygame.mixer.Sound.play(game_sound)
-    running = True
-    screen.fill(pygame.Color('white'))
-    FPS = 60
+class BossBullet(pygame.sprite.Sprite):
+    image1 = pygame.image.load("data/bulletRed2.png")
+    image = pygame.transform.scale(image1, (16, 24))
 
-    clock = pygame.time.Clock()
-    pygame.time.set_timer(pygame.USEREVENT, 1000)
+    def __init__(self, *group):
+        super().__init__(*group)
+        self.image = BossBullet.image
+        self.rect = self.image.get_rect()
+        self.rect.x = Boss().rect.x
+        self.rect.y = Boss().rect.y
 
-    player, level_x, level_y = generate_level(load_level('lvl1.txt'))
+    def update(self):
+        self.rect.x -= 10
+        if self.rect.x == 6:
+            self.rect.x = Boss().rect.x
 
-    camera = Camera()
-
-    rand_point = point_gen_enemy[0]
-    rand_point_x, rand_point_y = rand_point.rect.x, rand_point.rect.y
-    Enemy(rand_point_x, rand_point_y, collidable_object, bunk, all_sprites)
-
-    rand_point = point_gen_enemy[3]
-    rand_point_x, rand_point_y = rand_point.rect.x, rand_point.rect.y
-    Enemy(rand_point_x, rand_point_y, collidable_object, bunk, all_sprites)
-
-    rand_point = point_gen_enemy[-1]
-    rand_point_x, rand_point_y = rand_point.rect.x, rand_point.rect.y
-    Enemy(rand_point_x, rand_point_y, collidable_object, bunk, all_sprites)
-
-    rand_point = point_gen_enemy[2]
-    rand_point_x, rand_point_y = rand_point.rect.x, rand_point.rect.y
-    Enemy(rand_point_x, rand_point_y, collidable_object, bunk, all_sprites)
-
-    if scene:  # проверка начата ли сцена с босом
-        Boss(all_sprites)
-        BossBullet(all_sprites)
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                tiles_group.empty()
-                running = False
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                new = Bullet(*event.pos, player, all_sprites)
-                pygame.mixer.Sound.play(shot_sound)
-                bullets.add(new)
-            if event.type == pygame.USEREVENT:
-                rand_point = choice(point_gen_enemy)
-                rand_point_x, rand_point_y = rand_point.rect.x, rand_point.rect.y
-                Enemy(rand_point_x, rand_point_y, collidable_object, bunk, all_sprites)
-
-        screen.fill(pygame.Color('white'))
-        hits = pygame.sprite.groupcollide(bunk, bullets, False, True)
-        if hits:
-            collided_object = list(hits.keys())[0]
-            if type(collided_object) == Enemy:
-                pygame.mixer.Sound.play(damage_sound)
-                collided_object.took_damage(50)
-                if collided_object.hp <= 0:
-                    collided_object.kill()
-
-        for sprite in all_sprites:
-            camera.apply(sprite)
-        camera.update(player)
-
-        player.collide(collidable_object)
-
-        all_sprites.update()
-        tiles_group.draw(screen)
-        all_sprites.draw(screen)
-        player_group.draw(screen)
-
-        clock.tick(FPS)
-
-        pygame.display.flip()
+        elif self.rect.x < 6:
+            self.rect.x = Boss().rect.x
 
 
-def rules_background():
-    back = pygame.image.load('rules2.PNG')
-    gr = True
-    to_menu = Button(100, 40)
-    pygame.mixer.Sound.stop(menu_sound)
-    pygame.mixer.Sound.play(rule_sound)
+class Bunker(pygame.sprite.Sprite):
+    image1 = pygame.image.load("data/crateMetal.png")
+    image = pygame.transform.scale(image1, (56, 56))
 
-    while gr:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
-        screen.blit(back, (0, 0))
-        to_menu.draw(50, 200, 'back', menu)
-        pygame.display.update()
+    def __init__(self, pos_x, pos_y, *group):
+        super().__init__(*group)
+        self.image = Bunker.image
+        self.rect = self.image.get_rect().move(
+            tile_width * pos_x, tile_height * pos_y)
 
 
-def text(message, x, y, color=(0, 0, 0), font='PingPong.otf', font_size=30):
-    font_type = pygame.font.Font(font, font_size)
-    text = font_type.render(message, True, color)
-    screen.blit(text, (x, y))
+class Hero(pygame.sprite.Sprite):
+    image1 = pygame.image.load("data/1111.png")
+    original_image = pygame.transform.rotate(pygame.transform.scale(image1, (42, 46)), 90)
+    image = pygame.transform.rotate(pygame.transform.scale(image1, (42, 46)), 90)
+
+    def __init__(self, pos_x, pos_y, *group):
+        super().__init__(*group)
+        self.original_image = Hero.original_image
+        self.original_image = pygame.transform.rotate(self.original_image, 180)
+        self.key_is_up = True
+        self.rect = self.original_image.get_rect().move(
+            tile_width * pos_x, tile_height * pos_y)
+        self.position = [tile_width * pos_x, tile_height * pos_y]
+        self.last_move_x = 0
+        self.last_move_y = 0
+
+    def update(self):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_a]:
+            self.rect.x -= 5
+            self.position[0] -= 5
+            self.last_move_x = -5
+        if keys[pygame.K_d]:
+            self.rect.x += 5
+            self.position[0] += 5
+            self.last_move_x = 5
+        if keys[pygame.K_w]:
+            self.rect.y -= 5
+            self.position[1] -= 5
+            self.last_move_y = -5
+        if keys[pygame.K_s]:
+            self.rect.y += 5
+            self.position[1] += 5
+            self.last_move_y = 5
+        self.rotate()
+
+    def rotate(self):
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        rel_x, rel_y = mouse_x - self.rect.x, mouse_y - self.rect.y
+        angle = (180 / math.pi) * -math.atan2(rel_y, rel_x)
+        self.image = pygame.transform.rotate(self.original_image, int(angle + 4))
+        # self.rect = self.image.get_rect(center=self.position)
+
+    def collide(self, collidable_object):
+        hits = pygame.sprite.spritecollide(self, collidable_object, False)
+        if len(hits) != 0:
+            for block in hits:
+                if block.rect.x + (block.rect.width - 10) < self.rect.x:  # left
+                    self.rect.x += 5
+                    # self.rect.x = self.rect.x - self.last_move_x
+                if block.rect.x > self.rect.x + (self.rect.width - 18):  # right
+                    self.rect.x -= 5
+                    # self.rect.y = self.rect.y - self.last_move_y
+                if block.rect.y > self.rect.y + (self.rect.height - 32):  # up
+                    self.rect.y -= 5
+                if block.rect.y + (block.rect.height - 40) < self.rect.y:  # down
+                    self.rect.y += 5
+
+        self.last_move_x = self.last_move_y = 0
 
 
-class Button:
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-        self.off_color = (241, 227, 18)
-        self.on_color = (207, 31, 222)
+class Bullet(pygame.sprite.Sprite):
+    image1 = pygame.image.load("data/bulletRed2.png")
+    image = pygame.transform.scale(image1, (10, 14))
 
-    def draw(self, x, y, message, act=None, font_size=30):
-        mouse = pygame.mouse.get_pos()
-        touch = pygame.mouse.get_pressed()
-        if x < mouse[0] < x + self.width and y < mouse[1] < y + self.height:
-            pygame.draw.rect(screen, self.on_color, (x, y, self.width, self.height))
+    def __init__(self, pos_x, pos_y, player, *group):
+        super().__init__(*group)
+        self.image = Bullet.image
+        self.rect = self.image.get_rect()
+        self.rect.x = player.rect.x + 15
+        self.rect.y = player.rect.y + 15
 
-            if touch[0] == 1 and act is not None:
-                pygame.mixer.Sound.play(button_sound)
-                pygame.time.delay(300)
-                act()
+        # x, y = pygame.mouse.get_pos()# нажатие мыши
+        dx, dy = pos_x - self.rect.x, pos_y - self.rect.y
+        len = math.hypot(dx, dy)
+        self.dx = dx / len
+        self.dy = dy / len
+        self.speed = 20
+        angle = math.degrees(math.atan2(-dy, dx)) - 90
+        self.image = pygame.transform.rotate(self.image, angle)
+
+    def update(self):
+        self.rect.x += self.dx * self.speed
+        self.rect.y += self.dy * self.speed
+
+
+class Camera:
+    # зададим начальный сдвиг камеры
+    def __init__(self):
+        self.dx = 0
+        self.dy = 0
+
+    # сдвинуть объект obj на смещение камеры
+    def apply(self, obj):
+        obj.rect.x += self.dx
+        obj.rect.y += self.dy
+
+    # позиционировать камеру на объекте target
+    def update(self, target):
+        x, y = target.rect.center
+        self.dx = -(x + target.rect.w / 2 - width / 2)
+        self.dy = -(y + target.rect.h / 2 - height / 2)
+
+
+class Enemy(pygame.sprite.Sprite):
+    image1 = pygame.image.load("data/creature.png")
+    image = pygame.transform.scale(image1, (72, 84))
+    image_damage = pygame.image.load("data/creature_damge.png")
+
+    def __init__(self, x, y, collidable_object, *group):
+        super().__init__(*group)
+
+        self.collidable_object = []
+        for i in collidable_object:
+            if type(i) == Bunker:
+                self.bunker = i
+                self.collidable_object.append(i)
+            if type(i) == Tile:
+                if i.type == 'wall':
+                    self.collidable_object.append(i)
+
+        self.image = Enemy.image
+        self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = x, y
+        self.hp = 100
+        self.speed = 1
+        self.up_or_down = choice(['up', 'down'])
+        self.lef_or_rig = choice(['left', 'rig'])
+        self.last_move_x = 0
+        self.last_move_y = 0
+        len_for_bunker_x = self.bunker.rect.x - self.rect.x
+        len_for_bunker_y = self.bunker.rect.y - self.rect.y
+
+        if abs(len_for_bunker_x) > abs(len_for_bunker_y):
+            if len_for_bunker_x > 0:
+                self.bypass_speed_x = 2
+            else:
+                self.bypass_speed_x = -2
+            self.bypass_speed_y = choice([2, -2])
         else:
-            pygame.draw.rect(screen, self.off_color, (x, y, self.width, self.height))
-        text(message, x=x + 10, y=y + 10, font_size=font_size)
+            if len_for_bunker_y > 0:
+                self.bypass_speed_y = 2
+            else:
+                self.bypass_speed_y = -2
+            self.bypass_speed_x = choice([2, -2])
 
 
-def load_image(name, colorkey=None):
-    fullname = os.path.join('data', name)
-    if not os.path.isfile(fullname):
-        print(f"Файл с изображением '{fullname}' не найден")
-        sys.exit()
-    image = pygame.image.load(fullname)
-    if colorkey is not None:
-        image = image.convert()
-        if colorkey == -1:
-            colorkey = image.get_at((0, 0))
-        image.set_colorkey(colorkey)
-    else:
-        image = image.convert_alpha()
-    return image
+    def update(self):
+        x = self.bunker.rect.x
+        y = self.bunker.rect.y
+        self.last_move_x = 0
+        self.last_move_y = 0
+
+        if self.rect.x > x:
+            self.rect.x -= self.speed
+            self.last_move_x = -self.speed
+        elif self.rect.x < x:
+            self.rect.x += self.speed
+            self.last_move_x = self.speed
+
+        check_collide = self.collide(self.collidable_object, 'x')
+        if check_collide[0]:
+            self.rect.x -= self.last_move_x
+            if check_collide[1]:  # подошли к бункеру или нет
+                self.attack_the_bunker()
+            else:
+                self.rect.y += self.bypass_speed_x
+
+        if self.rect.y > y:
+            self.rect.y -= self.speed
+            self.last_move_y = -self.speed
+        elif self.rect.y < y:
+            self.rect.y += self.speed
+            self.last_move_y = self.speed
+
+        check_collide = self.collide(self.collidable_object, 'y')
+        if check_collide[0]:
+            self.rect.y -= self.last_move_y
+            if check_collide[1]:  # подошли к бункеру или нет
+                self.attack_the_bunker()
+            else:
+                self.rect.x += self.bypass_speed_x
 
 
-tile_images = {
-    'wall': load_image('crateWood.png'),
-    'empty': load_image('tileGrass1.png'),
-    'sand': load_image('tileSand1.png')
-}
+    def took_damage(self, damage):
+        self.hp -= damage
+
+    def collide(self, collidable_object, x_or_y):
+        hits = pygame.sprite.spritecollide(self, collidable_object, False)
+        collide_x = False
+        collide_y = False
+        attack = False
+        if len(hits) != 0:
+            if x_or_y == 'x':
+                for block in hits:
+                    if block.rect.x + (block.rect.width - 10) < self.rect.x:  # left
+                        collide_x = True
+                    if block.rect.x > self.rect.x + (self.rect.width - 10):  # right
+                        collide_x = True
+                    if type(block) == Bunker:
+                        attack = True
+                if attack:
+                    self.attack_the_bunker()
+                return [collide_x, attack]
+            else:
+                for block in hits:
+                    if block.rect.y > self.rect.y + (self.rect.height - 10):  # up
+                        collide_y = True
+                    if block.rect.y + (block.rect.height - 10) < self.rect.y:  # down
+                        collide_y = True
+                    if type(block) == Bunker:
+                        attack = True
+                if attack:
+                    self.attack_the_bunker()
+                return [collide_y, attack]
+
+        return [False, attack]
+
+    def attack_the_bunker(self):
+        pass
 
 
-def load_level(filename):
-    filename = 'data/' + filename
-    # читаем уровень, убирая символы перевода строки
-    with open(filename, 'r') as mapFile:
-        level_map = [line.strip() for line in mapFile]
-
-    # и подсчитываем максимальную длину
-    max_width = max(map(len, level_map))
-
-    # дополняем каждую строку пустыми клетками ('.')
-    return list(map(lambda x: x.ljust(max_width, '.'), level_map))
-
-
-def generate_level(level):
-    new_player, x, y = None, None, None
-    for y in range(len(level)):
-        for x in range(len(level[y])):
-            if level[y][x] == '.':
-                Tile('empty', x, y, tile_images, tiles_group, all_sprites)
-            elif level[y][x] == '#':
-                wall_tile = Tile('wall', x, y, tile_images, tiles_group, all_sprites)
-                collidable_object.append(wall_tile)
-                bunk.add(wall_tile)
-            elif level[y][x] == '@':
-                Tile('empty', x, y, tile_images, tiles_group, all_sprites)
-                new_player = Hero(x, y, player_group, all_sprites)
-            elif level[y][x] == 'b':
-                collidable_object.append(Bunker(x, y, all_sprites))
-            elif level[y][x] == 's':
-                collidable_object.append(Tile('sand', x, y, tile_images, tiles_group, all_sprites))
-            elif level[y][x] == 'p':  # точка спавна врагов
-                point = Tile('sand', x, y, tile_images, tiles_group, all_sprites)
-                point_gen_enemy.append(point)
-
-    # вернем игрока, а также размер поля в клетках
-    return new_player, x, y
-
-
-if __name__ == '__main__':
-    menu()
-    pygame.quit()
+class Tile(pygame.sprite.Sprite):
+    def __init__(self, tile_type, pos_x, pos_y, tile_images, *group):
+        super().__init__(*group)
+        self.type = tile_type
+        image1 = pygame.transform.scale(tile_images[tile_type], (56, 56))
+        self.image = image1
+        self.rect = self.image.get_rect().move(
+            tile_width * pos_x, tile_height * pos_y)
